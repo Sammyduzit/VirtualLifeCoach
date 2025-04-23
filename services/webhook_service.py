@@ -1,4 +1,4 @@
-from twilio_service import TwilioService
+from .twilio_service import TwilioService
 
 
 class WebhookService:
