@@ -1,53 +1,53 @@
 import requests
-import re
 from difflib import SequenceMatcher
 
-URL = "https://world.openfoodfacts.org/cgi/search.pl"
 
-def clean_name(name):
-    """Remove numbers and extra spaces from the product name for better comparison."""
-    return re.sub(r'\d+', '', name).strip().lower()
+def search_products(query, page_size=50):
+    url = "https://world.openfoodfacts.org/cgi/search.pl"
+    params = {
+        'search_terms': query,
+        'search_simple': 1,
+        'action': 'process',
+        'json': 1,
+        'page_size': page_size
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    products = data.get('products', [])
+    return products
 
 
 def similar(a, b):
-    """Return similarity ratio between cleaned strings (ignoring numbers)."""
-    a_clean = clean_name(a)
-    b_clean = clean_name(b)
-    return SequenceMatcher(None, a_clean, b_clean).ratio()
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 
-def get_ean_by_product(product_name):
-    params = {
-        "search_terms": product_name,
-        "search_simple": 1,
-        "action": "process",
-        "json": 1
-    }
+def filter_and_deduplicate_products(query, products, threshold=0.6):
+    filtered = []
+    seen_names = set()
 
-    try:
-        response = requests.get(URL, params=params)
-        response.raise_for_status()
-        data = response.json()
+    for product in products:
+        name = product.get('product_name_complete') or product.get('product_name', '')
+        if not name or name in seen_names:
+            continue
 
-        matched_products = []
-        for product in data.get("products", []):
-            name = product.get("product_name", "")
-            ean = product.get("code", "")
-            # Choose only EANs with 13 digits
-            if similar(product_name, name) >= 0.9 and re.fullmatch(r"\d{13}", ean):
-                matched_products.append({name: ean})
+        if similar(query, name) >= threshold:
+            ean = product.get('code', 'No EAN')
+            filtered.append({"name": name, "ean": ean})
+            seen_names.add(name)
 
-        return matched_products
+    return filtered
 
-    except requests.exceptions.RequestException as e:
-        return f"Error during API request: {e}"
-    except ValueError:
-        return f"Error decoding the response as JSON."
+
+def get_matched_products(query):
+    products = search_products(query)
+    return filter_and_deduplicate_products(query, products)
+
 
 def main():
-    product = input("Please enter product name: ")
-    result = get_ean_by_product(product)
-    print(result)  # Remove the print statement before product release
+    query_input = input("Enter product name to search: ")
+    matched_results = get_matched_products(query_input)
+    print(matched_results) #remove in production
+
 
 if __name__ == "__main__":
     main()
