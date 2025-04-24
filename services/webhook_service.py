@@ -6,6 +6,8 @@ Handles incoming webhook payloads and routes them to appropriate services.
 from .twilio_service import TwilioService
 from pprint import pprint
 import json
+from get_EAN_by_product import get_matched_products
+from nutrients_by_product import get_product_nutrients
 import os
 
 
@@ -164,7 +166,7 @@ class WebhookService:
                 if not food_matches_dict:
                     food_input = data.get("Body").strip()
 
-                    food_api_response = "food_api(food_input)"
+                    food_api_response = get_matched_products(food_input)
 
                     if len(food_api_response) > 1:
                         self.twilio.send_conversation_reply(
@@ -174,11 +176,18 @@ class WebhookService:
 
                         # for index, key, value in enumerate(food_api_response):
                         #     food_matches_dict[index] = {key : value}
-                        food_matches_dict["1"] = food_api_response
+                        # food_matches_dict["1"] = food_api_response
 
-                        formatted_food_matches = "Here formatted food matches"
+                        for index, match in enumerate(food_api_response):
+                            food_matches_dict[str(index + 1)] = {
+                                "name": match["product_name"],
+                                "code": match["code"]
+                            }
 
-
+                        # formatted_food_matches = "Here formatted food matches"
+                        formatted_food_matches = "\n".join(
+                            [f"{i + 1}. {match['product_name']} ({match['brands']})" for i, match in
+                             enumerate(food_api_response)])
 
                         self.twilio.send_conversation_reply(
                             data["ConversationSid"], formatted_food_matches)
@@ -192,10 +201,12 @@ class WebhookService:
                     number_of_chosen_match = int(number_of_chosen_match)
                     #match_name, match_code = food_matches_dict[number_of_chosen_match]
 
+                    selected = food_matches_dict[str(number_of_chosen_match)]
+                    food_api_nutrition_response = get_product_nutrients(selected["code"])
 
-
-                    food_api_nutrition_response = "food_api(match_code)"
-                    nutrition_response = "Here formatted nutrition response."
+                    #nutrition_response = "Here formatted nutrition response." Check units!
+                    nutrition_response = (f"{selected["name"]} - Calories: {food_api_nutrition_response["calories_100g"]} kcal,"
+                                          f" Protein: {food_api_nutrition_response["proteins_100g"]}g")
 
                     # add to meal_nutrition
                     # save meal_nutrition
