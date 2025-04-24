@@ -1,6 +1,9 @@
 import requests
 from difflib import SequenceMatcher
 
+"""Callable function via get_matched_products("product") to
+return a list of dictionaries w/ matching product names and 
+respective EANs"""
 
 def search_products(query, page_size=50):
     url = "https://world.openfoodfacts.org/cgi/search.pl"
@@ -16,10 +19,8 @@ def search_products(query, page_size=50):
     products = data.get('products', [])
     return products
 
-
 def similar(a, b):
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
-
 
 def filter_and_deduplicate_products(query, products, threshold=0.6):
     filtered = []
@@ -37,17 +38,13 @@ def filter_and_deduplicate_products(query, products, threshold=0.6):
 
     return filtered
 
-
 def get_matched_products(query):
     products = search_products(query)
     return filter_and_deduplicate_products(query, products)
 
 
-def main():
-    query_input = input("Enter product name to search: ")
-    matched_results = get_matched_products(query_input)
-    print(matched_results) #remove in production
-
+"""def main():
+    print(get_matched_products("Nutella"))
 
 if __name__ == "__main__":
-    main()
+    main()"""
