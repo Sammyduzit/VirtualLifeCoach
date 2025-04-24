@@ -46,6 +46,9 @@ class WebhookService:
         conversation_sids = list((load_file("conversation_sids.json")))
         user_data = dict(load_file("user_data.json"))
         food_matches_dict = dict(load_file("food_matches.json"))
+        #meal_nutrition = dict(load_file("meal_nutrition.json"))
+        #daily_nutrition = dict(load_file("daily_nutrition.json"))
+        #daily_nutrition = {date: {carbohydrates: 100, protein:100...}}
 
         message_data = data
         pprint(message_data)
@@ -60,6 +63,11 @@ class WebhookService:
         print("Conv SID: ",conversation_sid)
 
         if event_type == "onMessageAdded":
+            #current_date = data.get('DateCreated') (without timestamp)
+            #last_date = next(iter(daily_nutrition), None)
+            # if current_date != last_date:
+            #     daily_nutrition.clear()
+
 
             print("entered new message")
             print(user_data)
@@ -146,11 +154,17 @@ class WebhookService:
 
             else:
                 print("entered else")
+                # if data.get("Body").strip().lower() == 'done':
+                #     send_conv_reply(meal_nutrition)
+                #     daily_nutrition = add meal nutrition
+                #     save daily_nutrition
+                #     send_conv_reply(daily_nutrition)
+                #     meal_nutrition.clear()
 
                 if not food_matches_dict:
                     food_input = data.get("Body").strip()
 
-                    food_api_response = ["apple1", "apple2"]                    #"food_api(food_input)"
+                    food_api_response = "food_api(food_input)"
 
                     if len(food_api_response) > 1:
                         self.twilio.send_conversation_reply(
@@ -181,9 +195,11 @@ class WebhookService:
 
 
                     food_api_nutrition_response = "food_api(match_code)"
-                    nutrition_response = "Here formatted nutrition response"
+                    nutrition_response = "Here formatted nutrition response."
 
-
+                    # add to meal_nutrition
+                    # save meal_nutrition
+                    #Type 'done' if that's all for now, in message
 
                     self.twilio.send_conversation_reply(
                         data["ConversationSid"], nutrition_response
