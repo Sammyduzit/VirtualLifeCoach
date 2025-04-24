@@ -3,7 +3,6 @@ Webhook processing service for Twilio Conversation events.
 
 Handles incoming webhook payloads and routes them to appropriate services.
 """
-
 from .twilio_service import TwilioService
 from pprint import pprint
 import json
@@ -22,7 +21,6 @@ def load_file(filename):
 def save_file(filename, data):
     with open(filename, "w") as handle:
         json.dump(data, handle)
-
 
 
 class WebhookService:
@@ -47,9 +45,11 @@ class WebhookService:
         """
         conversation_sids = list((load_file("conversation_sids.json")))
         user_data = dict(load_file("user_data.json"))
-        #json file für conv sids und json file for personal data
+        food_matches_dict = dict(load_file("food_matches.json"))
+
         message_data = data
         pprint(message_data)
+
 
         print("Conv sids: ",conversation_sids, type(conversation_sids))
 
@@ -61,10 +61,11 @@ class WebhookService:
 
         if event_type == "onMessageAdded":
 
-            print("entered checking")
+            print("entered new message")
             print(user_data)
+            print(user_data.get(conversation_sid, {}).get("Tracking_complete"))
 
-            if not user_data.get(f'{conversation_sid}["Tracking complete"]'):
+            if not user_data.get(conversation_sid, {}).get("Tracking_complete"):
                 if conversation_sid not in conversation_sids:
                     print("entered check for sid")
                     conversation_sids.append(conversation_sid)
@@ -76,7 +77,6 @@ class WebhookService:
                         data["ConversationSid"],
                         "Welcome to your personal Life Coach journey!\nHow should I call you?"
                     )
-
 
                 elif not user_data[conversation_sid].get("Name"):
                     print("entered name check")
@@ -135,17 +135,64 @@ class WebhookService:
                         "What is your goal?"
                     )
 
-
                 elif not user_data[conversation_sid].get("Goal"):
                     user_data[conversation_sid]["Goal"] = data.get("Body")
                     self.twilio.send_conversation_reply(
                         data["ConversationSid"],
                         "Please enter your meal, each ingredient one by one"
                     )
-                    user_data[conversation_sid]["Tracking complete"] = True
+                    user_data[conversation_sid]["Tracking_complete"] = True
                     save_file("user_data.json", user_data)
 
             else:
-                pass #body als string zu nicolas
+                print("entered else")
+
+                if not food_matches_dict:
+                    food_input = data.get("Body").strip()
+
+                    food_api_response = ["apple1", "apple2"]                    #"food_api(food_input)"
+
+                    if len(food_api_response) > 1:
+                        self.twilio.send_conversation_reply(
+                            data["ConversationSid"],
+                        "I have found multiple matches, which one is the closest to your product?\n"
+                        )
+
+                        # for index, key, value in enumerate(food_api_response):
+                        #     food_matches_dict[index] = {key : value}
+                        food_matches_dict["1"] = food_api_response
+
+                        formatted_food_matches = "Here formatted food matches"
+
+
+
+                        self.twilio.send_conversation_reply(
+                            data["ConversationSid"], formatted_food_matches)
+
+                        save_file("food_matches.json", food_matches_dict)
+                        print("file saved")
+                        matches_send = True
+                        print("matches send true")
+                else:
+                    number_of_chosen_match = data.get("Body").strip()
+                    number_of_chosen_match = int(number_of_chosen_match)
+                    #match_name, match_code = food_matches_dict[number_of_chosen_match]
+
+
+
+                    food_api_nutrition_response = "food_api(match_code)"
+                    nutrition_response = "Here formatted nutrition response"
+
+
+
+                    self.twilio.send_conversation_reply(
+                        data["ConversationSid"], nutrition_response
+                    )
+
+                    food_matches_dict.clear()
+                    save_file("food_matches.json", food_matches_dict)
+
+
+
 
         return {"status": "success"}
