@@ -6,8 +6,8 @@ Handles incoming webhook payloads and routes them to appropriate services.
 from .twilio_service import TwilioService
 from pprint import pprint
 import json
-from get_EAN_by_product import get_matched_products
-from nutrients_by_product import get_product_nutrients
+from .get_EAN_by_product import get_matched_products
+from .nutrients_by_product import get_product_nutrients
 import os
 
 
@@ -165,8 +165,11 @@ class WebhookService:
 
                 if not food_matches_dict:
                     food_input = data.get("Body").strip()
+                    print(food_input)
 
                     food_api_response = get_matched_products(food_input)
+
+                    print(food_api_response)
 
                     if len(food_api_response) > 1:
                         self.twilio.send_conversation_reply(
@@ -174,20 +177,25 @@ class WebhookService:
                         "I have found multiple matches, which one is the closest to your product?\n"
                         )
 
+                        print("Here")
+
                         # for index, key, value in enumerate(food_api_response):
                         #     food_matches_dict[index] = {key : value}
                         # food_matches_dict["1"] = food_api_response
 
                         for index, match in enumerate(food_api_response):
                             food_matches_dict[str(index + 1)] = {
-                                "name": match["product_name"],
-                                "code": match["code"]
+                                "name": match["name"],
+                                "ean": match["ean"]
                             }
+
 
                         # formatted_food_matches = "Here formatted food matches"
                         formatted_food_matches = "\n".join(
-                            [f"{i + 1}. {match['product_name']} ({match['code']})" for i, match in
+                            [f"{i + 1}. {match['name']} ({match['ean']})" for i, match in
                              enumerate(food_api_response)])
+
+                        print("Formatted Fodd matches", formatted_food_matches)
 
                         self.twilio.send_conversation_reply(
                             data["ConversationSid"], formatted_food_matches)
@@ -197,17 +205,23 @@ class WebhookService:
                         matches_send = True
                         print("matches send true")
                 else:
+                    print("enter match construction")
                     number_of_chosen_match = data.get("Body").strip()
                     number_of_chosen_match = int(number_of_chosen_match)
+                    print("Number of user", number_of_chosen_match)
                     #match_name, match_code = food_matches_dict[number_of_chosen_match]
 
                     selected = food_matches_dict[str(number_of_chosen_match)]
-
-                    code = selected["code"]
+                    print("Selected", selected)
+                    code = selected["ean"]
                     name = selected["name"]
 
+                    print(code)
+                    print(name)
+
                     # Fetch nutrition info
-                    nutrients = get_product_nutrients(selected(code))
+                    nutrients = get_product_nutrients(code)
+                    print("Nutrients:", nutrients)
                     calories = nutrients.get("energy-kcal_100g", "Not available")
                     carbohydrates = nutrients.get("carbohydrates_100g", "Not available")
                     fat = nutrients.get("fat_100g", "Not available")

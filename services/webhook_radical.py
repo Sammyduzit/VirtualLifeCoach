@@ -9,8 +9,8 @@ import logging
 from pprint import pprint
 
 from .twilio_service import TwilioService
-from get_EAN_by_product import get_matched_products
-from nutrients_by_product import get_product_nutrients
+from .get_EAN_by_product import get_matched_products
+from .nutrients_by_product import get_product_nutrients
 
 logger = logging.getLogger(__name__)
 

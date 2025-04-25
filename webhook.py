@@ -33,7 +33,7 @@ def webhook():
         result = webhook_service.handle_webhook(data)
         return jsonify(result), 200
     except Exception as e:
-        return jsonify({"status": "error"}), 500
+        return jsonify({"status": "error"}, e), 500
 
 
 if __name__ == "__main__":
