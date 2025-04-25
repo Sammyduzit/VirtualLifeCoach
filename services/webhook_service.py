@@ -186,7 +186,7 @@ class WebhookService:
 
                         # formatted_food_matches = "Here formatted food matches"
                         formatted_food_matches = "\n".join(
-                            [f"{i + 1}. {match['product_name']} ({match['brands']})" for i, match in
+                            [f"{i + 1}. {match['product_name']} ({match['code']})" for i, match in
                              enumerate(food_api_response)])
 
                         self.twilio.send_conversation_reply(
@@ -202,11 +202,25 @@ class WebhookService:
                     #match_name, match_code = food_matches_dict[number_of_chosen_match]
 
                     selected = food_matches_dict[str(number_of_chosen_match)]
-                    food_api_nutrition_response = get_product_nutrients(selected["code"])
 
-                    #nutrition_response = "Here formatted nutrition response." Check units!
-                    nutrition_response = (f"{selected["name"]} - Calories: {food_api_nutrition_response["calories_100g"]} kcal,"
-                                          f" Protein: {food_api_nutrition_response["proteins_100g"]}g")
+                    code = selected["code"]
+                    name = selected["name"]
+
+                    # Fetch nutrition info
+                    nutrients = get_product_nutrients(selected(code))
+                    calories = nutrients.get("energy-kcal_100g", "Not available")
+                    carbohydrates = nutrients.get("carbohydrates_100g", "Not available")
+                    fat = nutrients.get("fat_100g", "Not available")
+                    sugars = nutrients.get("sugars_100g", "Not available")
+                    salt = nutrients.get("salt_100g", "Not available")
+                    proteins = nutrients.get("proteins_100g", "Not available")
+
+                    # If critical fields are missing, treat as error
+                    if calories == "Not available" or proteins == "Not available":
+                        raise KeyError("Missing critical nutrition fields")
+
+                    nutrition_response = f"{name} — Calories: {calories} kcal, Carbohydrates: {carbohydrates} g, "
+                    f"Fat: {fat} g, Sugars: {sugars} g, Salt: {salt} g, Protein: {proteins} g"
 
                     # add to meal_nutrition
                     # save meal_nutrition
